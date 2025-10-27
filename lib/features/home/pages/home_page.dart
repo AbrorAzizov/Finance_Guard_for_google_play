@@ -24,9 +24,6 @@ class _HomePageState extends State<HomePage> {
 
     const BudgetTab(),
 
-    const Center(
-      child: Text('Settings', style: TextStyle(color: Colors.white)),
-    ),
 
   ];
 
@@ -56,10 +53,7 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.account_balance_wallet_outlined),
             label: "Budgets",
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.lightbulb),
-            label: "AI overview",
-          ),
+
 
         ],
       ),

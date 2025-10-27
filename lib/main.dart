@@ -10,7 +10,6 @@ import 'features/budget/domain/model/goal/goal_model.dart';
 import 'features/budget/domain/model/limit/limits_model.dart';
 import 'features/categories/domain/model/categories_model.dart';
 import 'features/categories/presentation/bloc/categories_cubit.dart';
-import 'features/chat/bloc/chat_cubit.dart';
 import 'features/home/bloc/transaction_bloc/transaction_cubit.dart';
 import 'features/home/data/model/transaction_model.dart';
 import 'features/home/pages/home_page.dart';
@@ -27,9 +26,6 @@ void main() async {
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) => sl<ChatCubit>(),
-        ),
         BlocProvider(
           create: (context) => sl<GoalsCubit>()..addDefaultGoal(),
         ),

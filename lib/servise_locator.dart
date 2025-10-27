@@ -3,8 +3,7 @@ import 'package:finance_guard/features/budget/data/repository/limits_repo_impl.d
 import 'package:finance_guard/features/budget/domain/model/limit/limits_model.dart';
 import 'package:finance_guard/features/budget/domain/repo/goal_repo_imp.dart';
 import 'package:finance_guard/features/categories/domain/model/categories_model.dart';
-import 'package:finance_guard/features/chat/bloc/chat_cubit.dart';
-import 'package:finance_guard/features/chat/data/service/chat_service.dart';
+
 import 'package:finance_guard/features/home/bloc/transaction_bloc/transaction_cubit.dart';
 import 'package:finance_guard/features/home/data/repository/transaction_repo_imp.dart';
 import 'package:finance_guard/features/home/domain/repository/transaction_repo.dart';
@@ -17,8 +16,7 @@ import 'features/budget/domain/repo/limits_repo_imp.dart';
 import 'features/categories/data/repository/categories_repo_imp.dart';
 import 'features/categories/domain/repo/categories_repo.dart';
 import 'features/categories/presentation/bloc/categories_cubit.dart';
-import 'features/chat/data/repository/chat_repo_imp.dart';
-import 'features/chat/domain/repo/chat_repo.dart';
+
 import 'features/home/data/model/transaction_model.dart';
 import 'features/welcome & balance cubit/repo/balance_repo_imp.dart';
 final sl = GetIt.instance;
@@ -52,18 +50,8 @@ Future<void> setupServiceLocator() async {
         () => GoalsRepoImpl(box: goalBox),
   );
 
-  // Services
-  sl.registerLazySingleton<DeepSeekCloudService>(
-        () => DeepSeekCloudService(),
-  );
 
-  // Chat Repo (depends on DeepSeekCloudService + GoalsRepo)
-  sl.registerLazySingleton<ChatRepo>(
-        () => ChatRepoImp(sl<DeepSeekCloudService>(), sl<GoalsRepo>()),
-  );
 
-  // Cubits
-  sl.registerFactory(() => ChatCubit(sl<ChatRepo>()));
   sl.registerFactory(() => CategoryCubit(sl<CategoriesRepo>()));
 
   // These cubits likely need to be alive globally

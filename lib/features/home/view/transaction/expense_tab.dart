@@ -10,7 +10,6 @@ import '../../../../core/widgets/create_button.dart';
 import '../../../../core/widgets/date_picker.dart';
 import '../../../../core/widgets/enter_amount.dart';
 import '../../../../core/widgets/selecting_category.dart';
-
 import '../../../categories/presentation/bloc/category_state.dart';
 import '../../bloc/transaction_bloc/transaction_cubit.dart';
 import '../../domain/entity/initial_transaction.dart';
@@ -26,8 +25,7 @@ class _ExpenseTabState extends State<ExpenseTab> {
   DateTime selectedTime = DateTime.now();
   double moneyAmount = 0;
   String? comment;
-  final _uuid = Uuid();
-
+  final _uuid = const Uuid(); // make const for efficiency
   CategoryEntity? selectedCategory;
 
   @override
@@ -46,7 +44,6 @@ class _ExpenseTabState extends State<ExpenseTab> {
       amount: moneyAmount,
       date: selectedTime,
       type: 'expense',
-
     );
 
     context.read<TransactionCubit>().createTransaction(transaction, selectedCategory!);
@@ -54,59 +51,79 @@ class _ExpenseTabState extends State<ExpenseTab> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CategoryCubit, CategoryState>(
-      builder: (context, state) {
-        if (state is CategoryLoaded) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: BlocBuilder<CategoryCubit, CategoryState>(
+        builder: (context, state) {
+          if (state is! CategoryLoaded) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final categories = state.categories;
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                CurrencyInput(
-                  selectedAmount: (value) {
-                    final cleaned = value.replaceAll(RegExp(r'[^0-9.]'), '');
-                    setState(() {
-                      moneyAmount = double.tryParse(cleaned) ?? 0;
-                    });
-                  },
+          return Stack(
+            children: [
+              // scrollable form
+              SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 100), // leave space for button
+                child: Column(
+                  children: [
+                    CurrencyInput(
+                      selectedAmount: (value) {
+                        final cleaned = value.replaceAll(RegExp(r'[^0-9.]'), '');
+                        setState(() {
+                          moneyAmount = double.tryParse(cleaned) ?? 0;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SelectingCategory(
+                      selectedCategory: selectedCategory,
+                      onSelect: (category) {
+                        setState(() {
+                          debugPrint('Выбрана категория: ${category.name}');
+                          selectedCategory = category;
+                        });
+                      },
+                      categories: categories,
+                    ),
+                    SizedBox(height: 20.h),
+                    DatePicker(
+                      onDateSelected: (value) {
+                        setState(() {
+                          selectedTime = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    CommentInput(
+                      onCommentChanged: (text) {
+                        setState(() {
+                          comment = text;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 100.h),
+                  ],
                 ),
-                SizedBox(height: 20),
-                SelectingCategory(
-                  selectedCategory: selectedCategory,
-                  onSelect: (category) {
-                    setState(() {
-                      debugPrint('Выбрана категория: ${category.name}');
-                      selectedCategory = category;
-                    });
-                  },
-                  categories: categories,
+              ),
+
+              // fixed button at bottom
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 10,
+                child: SafeArea(
+                  top: false,
+                  child: CreateButton(
+                    onPressed: _createTransaction,
+                  ),
                 ),
-                SizedBox(height: 20.h),
-                DatePicker(
-                  onDateSelected: (value) {
-                    setState(() {
-                      selectedTime = value;
-                    });
-                  },
-                ),
-                SizedBox(height: 20),
-                CommentInput(
-                  onCommentChanged: (text) {
-                    setState(() {
-                      comment = text;
-                    });
-                  },
-                ),
-                SizedBox(height: 20.h),
-                CreateButton(
-                  onPressed: _createTransaction,
-                ),
-              ],
-            ),
+              ),
+            ],
           );
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
+        },
+      ),
     );
   }
 }
