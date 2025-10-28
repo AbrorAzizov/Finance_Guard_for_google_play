@@ -23,6 +23,7 @@ class IconEntity {
       id: id,
       iconCodePoint: icon.codePoint,
       iconFontFamily: icon.fontFamily,
+      // ignore: deprecated_member_use
       color: color.value, // automatic conversion
     );
   }

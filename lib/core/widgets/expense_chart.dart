@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../features/home/domain/entity/transaction_entity.dart';
+import '../../features/home/pages/transaction_page.dart';
 import '../../features/home/useCase/group_expenses_by_name.dart';
 
 
@@ -117,7 +118,14 @@ class _ExpensesPieChartCardState extends State<ExpensesPieChartCard> {
               ),
             ],
           ),
-          PlusButton(onPressed: () {},)
+          PlusButton(onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const TransactionPage(),
+              ),
+            );
+          },)
         ],
       ),
     );
