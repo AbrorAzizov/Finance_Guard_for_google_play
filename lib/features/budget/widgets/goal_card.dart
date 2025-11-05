@@ -73,19 +73,22 @@ class GoalCard extends StatelessWidget {
             SizedBox(height: 4.h),
 
             TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0, end: total),
+              tween: Tween<double>(begin: 0, end: totalPercentage.clamp(0.0, 1.0)),
               duration: const Duration(milliseconds: 2000),
               curve: Curves.easeInOut,
               builder: (context, animatedValue, child) {
-                return LinearProgressIndicator(
-                  backgroundColor: AppColors.buttonColor..withValues(alpha: 0.3),
-                  valueColor: AlwaysStoppedAnimation(AppColors.buttonColor),
-                  minHeight: 15.h,
-                  value: animatedValue,
-                  borderRadius: BorderRadius.circular(10.r),
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(10.r), // rounded ends
+                  child: LinearProgressIndicator(
+                    backgroundColor: AppColors.buttonColor.withOpacity(0.3), // keep semi-transparent background
+                    valueColor: AlwaysStoppedAnimation(AppColors.buttonColor),
+                    minHeight: 15.h,
+                    value: animatedValue,
+                  ),
                 );
               },
             ),
+
 
             SizedBox(height: 8.h),
 

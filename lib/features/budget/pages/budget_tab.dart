@@ -1,6 +1,5 @@
 import 'package:finance_guard/core/dialog/loading_dialog.dart';
 import 'package:finance_guard/core/widgets/add_button.dart';
-import 'package:finance_guard/core/widgets/notifications_button.dart';
 import 'package:finance_guard/features/budget/bloc/goal/goal_cubit.dart';
 import 'package:finance_guard/features/budget/domain/repo/goal_repo_imp.dart';
 import 'package:finance_guard/features/budget/domain/repo/limits_repo.dart';
@@ -49,7 +48,7 @@ class _BudgetTabState extends State<BudgetTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Budgets', style: AppTextStyles.screenTitle),
-                NotificationsButton(onPressed: () {}),
+
               ],
             ),
             SizedBox(height: 30.h),
