@@ -23,6 +23,9 @@ class LimitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fix progress when limit is 0 or invalid
+    final double safeValue = value.isFinite ? value.clamp(0.0, 1.0) : 0.0;
+
     return Container(
       height: 185.h,
       padding: EdgeInsets.all(18.w),
@@ -33,39 +36,34 @@ class LimitCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Заголовок ---
-          Text(
-            title,
-            style: AppTextStyles.widgetLabel,
-          ),
+          Text(title, style: AppTextStyles.widgetLabel),
           SizedBox(height: 8.h),
 
-          // --- Текст с расходами ---
           Text(
             "\$${expense.toStringAsFixed(0)} Spent of \$${limit.toStringAsFixed(0)}",
-            style: AppTextStyles.statsTitle.copyWith(fontSize:14),
+            style: AppTextStyles.statsTitle.copyWith(fontSize: 14),
           ),
           SizedBox(height: 8.h),
 
-
           TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: value),
+            tween: Tween<double>(begin: 0, end: safeValue),
             duration: const Duration(milliseconds: 800),
             curve: Curves.easeInOut,
             builder: (context, animatedValue, child) {
-              return LinearProgressIndicator(
-                backgroundColor: AppColors.buttonColor..withValues(alpha: 0.3),
-                valueColor: AlwaysStoppedAnimation(AppColors.buttonColor),
-                minHeight: 15.h,
-                value: animatedValue,
-                borderRadius: BorderRadius.circular(10.r),
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(15.h / 2), // fully rounded ends
+                child: LinearProgressIndicator(
+                  backgroundColor: AppColors.buttonColor.withOpacity(0.3),
+                  valueColor: AlwaysStoppedAnimation(AppColors.buttonColor),
+                  minHeight: 15.h,
+                  value: animatedValue,
+                ),
               );
             },
           ),
 
           SizedBox(height: 8.h),
 
-          // --- Кнопка Edit ---
           SizedBox(
             width: double.infinity,
             child: EditButton(onPressed: onEdit),
