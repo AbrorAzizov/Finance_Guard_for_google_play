@@ -1,5 +1,5 @@
 import 'package:finance_guard/core/widgets/create_button.dart';
-import 'package:finance_guard/features/budget/domain/repo/limits_repo_imp.dart';
+import 'package:finance_guard/features/budget/domain/repo/limits_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/text_styles.dart';

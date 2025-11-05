@@ -12,7 +12,7 @@ import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 import 'features/budget/data/repository/goal_repo.dart';
 import 'features/budget/domain/model/goal/goal_model.dart';
-import 'features/budget/domain/repo/limits_repo_imp.dart';
+import 'features/budget/domain/repo/limits_repo.dart';
 import 'features/categories/data/repository/categories_repo_imp.dart';
 import 'features/categories/domain/repo/categories_repo.dart';
 import 'features/categories/presentation/bloc/categories_cubit.dart';
@@ -55,6 +55,6 @@ Future<void> setupServiceLocator() async {
   sl.registerFactory(() => CategoryCubit(sl<CategoriesRepo>()));
 
   // These cubits likely need to be alive globally
-  sl.registerLazySingleton(() => GoalsCubit(sl<GoalsRepo>()));
+  sl.registerLazySingleton(() => GoalsCubit(sl<GoalsRepo>(),sl<LimitsRepo>()));
   sl.registerLazySingleton(() => TransactionCubit());
 }

@@ -1,3 +1,4 @@
+import 'package:finance_guard/features/budget/domain/repo/limits_repo.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/entity/goal_entity.dart';
 import '../../domain/repo/goal_repo_imp.dart';
@@ -5,8 +6,8 @@ import 'goals_state.dart';
 
 class GoalsCubit extends Cubit<GoalsState> {
   final GoalsRepo repo;
-
-  GoalsCubit( this.repo) : super(GoalsInitial());
+  final LimitsRepo limitsRepo;
+  GoalsCubit( this.repo, this.limitsRepo) : super(GoalsInitial());
 
   Future<void> addDefaultGoal() async {
     final goals = await repo.getGoals();
@@ -24,8 +25,9 @@ class GoalsCubit extends Cubit<GoalsState> {
   Future<void> loadGoals() async {
     emit(GoalsLoading());
     try {
+      final limits = await limitsRepo.getLimits();
       final goals = await repo.getGoals();
-      emit(GoalsLoaded(goals));
+      emit(GoalsLoaded(goals,limits));
     } catch (e) {
       emit(GoalsError(e.toString()));
     }

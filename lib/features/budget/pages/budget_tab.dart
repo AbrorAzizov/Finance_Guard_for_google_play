@@ -2,7 +2,8 @@ import 'package:finance_guard/core/dialog/loading_dialog.dart';
 import 'package:finance_guard/core/widgets/add_button.dart';
 import 'package:finance_guard/core/widgets/notifications_button.dart';
 import 'package:finance_guard/features/budget/bloc/goal/goal_cubit.dart';
-import 'package:finance_guard/features/budget/domain/repo/limits_repo_imp.dart';
+import 'package:finance_guard/features/budget/domain/repo/goal_repo_imp.dart';
+import 'package:finance_guard/features/budget/domain/repo/limits_repo.dart';
 import 'package:finance_guard/features/budget/pages/limits_edit_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +12,6 @@ import '../../../core/constants/text_styles.dart';
 import '../../../servise_locator.dart';
 import '../../home/bloc/transaction_bloc/transaction_cubit.dart';
 import '../../home/bloc/transaction_bloc/transaction_state.dart';
-import '../../welcome & balance cubit/repo/balance_repo.dart';
 import '../bloc/goal/goals_state.dart';
 import '../data/entity/limits_entity.dart';
 import '../widgets/goal_card.dart';
@@ -26,14 +26,14 @@ class BudgetTab extends StatefulWidget {
 }
 
 class _BudgetTabState extends State<BudgetTab> {
-  late final Future<LimitsEntity> _limitsFuture;
-  final total = sl<BalanceRepo>().getTotal();
+  late Future<LimitsEntity> _limitsFuture;
 
   @override
   void initState() {
     super.initState();
+    // Load goals and limits
+    sl<GoalsRepo>().getGoals();
     _limitsFuture = sl<LimitsRepo>().getLimits();
-     sl<GoalsCubit>().loadGoals();
   }
 
   @override
@@ -43,7 +43,7 @@ class _BudgetTabState extends State<BudgetTab> {
         padding: EdgeInsets.all(20.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
+          children: [
             SizedBox(height: 20.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -53,14 +53,20 @@ class _BudgetTabState extends State<BudgetTab> {
               ],
             ),
             SizedBox(height: 30.h),
+
             Text('Limits', style: AppTextStyles.statsTitle),
             SizedBox(height: 12.h),
 
+            // ---- Limits Section ----
             FutureBuilder<LimitsEntity>(
               future: _limitsFuture,
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(child: Loading());
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: Loading());
+                } else if (snapshot.hasError) {
+                  return Text('Error loading limits');
+                } else if (!snapshot.hasData) {
+                  return const Text('No limits set');
                 }
 
                 final limits = snapshot.data!;
@@ -72,7 +78,7 @@ class _BudgetTabState extends State<BudgetTab> {
 
                       final monthPercentage = limits.monthlyLimit > 0
                           ? (monthExpenses / limits.monthlyLimit)
-                              .clamp(0.0, 1.0)
+                          .clamp(0.0, 1.0)
                           : 0.0;
 
                       final weekLimit = limits.monthlyLimit / 4;
@@ -84,7 +90,6 @@ class _BudgetTabState extends State<BudgetTab> {
                         children: [
                           Expanded(
                             child: LimitCard(
-
                               title: "Monthly",
                               expense: monthExpenses,
                               limit: limits.monthlyLimit,
@@ -92,102 +97,104 @@ class _BudgetTabState extends State<BudgetTab> {
                               onEdit: () async {
                                 final updated = await Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const LimitsEditPage()),
+                                  MaterialPageRoute(
+                                    builder: (_) => const LimitsEditPage(),
+                                  ),
                                 );
-
                                 if (updated == true) {
                                   setState(() {
-                                    _limitsFuture = sl<LimitsRepo>().getLimits();
+                                    _limitsFuture =
+                                        sl<LimitsRepo>().getLimits();
                                   });
                                 }
                               },
-
-
                             ),
                           ),
-
                           SizedBox(width: 12.w),
                           Expanded(
                             child: LimitCard(
+                              title: "Weekly",
                               expense: weekExpenses,
                               limit: weekLimit,
-                              title: "Weekly",
                               value: weekPercentage,
                               onEdit: () async {
                                 final updated = await Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const LimitsEditPage()),
+                                  MaterialPageRoute(
+                                    builder: (_) => const LimitsEditPage(),
+                                  ),
                                 );
-
                                 if (updated == true) {
                                   setState(() {
-                                    _limitsFuture = sl<LimitsRepo>().getLimits();
+                                    _limitsFuture =
+                                        sl<LimitsRepo>().getLimits();
                                   });
                                 }
                               },
-
                             ),
                           ),
                         ],
                       );
                     } else {
-                      return Center(child: Loading());
+                      return const Center(child: Loading());
                     }
                   },
                 );
               },
             ),
-          SizedBox(height: 20.h),
+
+            SizedBox(height: 20.h),
+
+            // ---- Goals Section ----
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Goals', style: AppTextStyles.statsTitle),
-                AddCircleButton(onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) =>  AddGoalPage()),
-                  );
-                },)
+                AddCircleButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddGoalPage()),
+                    );
+                  },
+                ),
               ],
             ),
-            BlocBuilder<GoalsCubit, GoalsState>(
-              builder: (context, state) {
-                if (state is GoalsLoading) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (state is GoalsLoaded) {
+            SizedBox(height: 12.h),
 
-                  return Expanded(
-                    child: ListView.builder(
+            Expanded(
+              child: BlocBuilder<GoalsCubit, GoalsState>(
+                builder: (context, state) {
+                  if (state is GoalsLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is GoalsLoaded) {
+                    if (state.goals.isEmpty) {
+                      return const Center(child: Text("No goals yet"));
+                    }
+                    return ListView.builder(
                       itemCount: state.goals.length,
                       itemBuilder: (context, index) {
                         final goal = state.goals[index];
-
-                        final totalPercentage = (goal.targetAmount / total );
-                        return GoalCard (
-
+                        final totalPercentage =
+                        (goal.targetAmount / state.limitsEntity.monthlyLimit)
+                            .clamp(0.0, 1.0);
+                        return GoalCard(
                           totalPercentage: totalPercentage,
-                          goal : goal,
-                          total: total
+                          goal: goal,
+                          total: state.limitsEntity.monthlyLimit,
                         );
-                    
-                                     },),
-                  );
-                } else if (state is GoalsError) {
-                  return Center(child: Text("Error: ${state.message}"));
-                }
-                return SizedBox.shrink();
-              },
+                      },
+                    );
+                  } else if (state is GoalsError) {
+                    return Center(child: Text("Error: ${state.message}"));
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
-
-            SizedBox(height: 12.h),
-
           ],
         ),
       ),
     );
   }
-
-
-  }
-
-
+}
