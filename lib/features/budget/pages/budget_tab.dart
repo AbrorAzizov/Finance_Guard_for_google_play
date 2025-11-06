@@ -1,8 +1,7 @@
 import 'package:finance_guard/core/dialog/loading_dialog.dart';
 import 'package:finance_guard/core/widgets/add_button.dart';
 import 'package:finance_guard/features/budget/bloc/goal/goal_cubit.dart';
-import 'package:finance_guard/features/budget/domain/repo/goal_repo_imp.dart';
-import 'package:finance_guard/features/budget/domain/repo/limits_repo.dart';
+
 import 'package:finance_guard/features/budget/pages/limits_edit_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,8 +10,9 @@ import '../../../core/constants/text_styles.dart';
 import '../../../servise_locator.dart';
 import '../../home/bloc/transaction_bloc/transaction_cubit.dart';
 import '../../home/bloc/transaction_bloc/transaction_state.dart';
+import '../../welcome & balance cubit/repo/balance_repo.dart';
 import '../bloc/goal/goals_state.dart';
-import '../data/entity/limits_entity.dart';
+
 import '../widgets/goal_card.dart';
 import '../widgets/limit_widget.dart';
 import 'add_goal_page.dart';
@@ -25,14 +25,11 @@ class BudgetTab extends StatefulWidget {
 }
 
 class _BudgetTabState extends State<BudgetTab> {
-  late Future<LimitsEntity> _limitsFuture;
 
   @override
   void initState() {
     super.initState();
-    // Load goals and limits
-    sl<GoalsRepo>().getGoals();
-    _limitsFuture = sl<LimitsRepo>().getLimits();
+    sl<GoalsCubit>().loadGoals();
   }
 
   @override
@@ -57,91 +54,85 @@ class _BudgetTabState extends State<BudgetTab> {
             SizedBox(height: 12.h),
 
             // ---- Limits Section ----
-            FutureBuilder<LimitsEntity>(
-              future: _limitsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: Loading());
-                } else if (snapshot.hasError) {
-                  return Text('Error loading limits');
-                } else if (!snapshot.hasData) {
-                  return const Text('No limits set');
+            BlocBuilder<GoalsCubit, GoalsState>(
+              builder: (context, state) {
+                if (state is GoalsLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is GoalsLoaded) {
+                  if (state.goals.isEmpty) {
+                    return const Center(child: Text("No goals yet"));
+                  }
+                  return BlocBuilder<TransactionCubit, TransactionState>(
+                    builder: (context, tState) {
+                      if (tState is TransactionStateSummary) {
+                        final limits = state.limitsEntity;
+                        final monthExpenses = tState.monthData.totalExpenses;
+                        final weekExpenses = tState.weekData.totalExpenses;
+
+                        final monthPercentage = limits.monthlyLimit > 0
+                            ? (monthExpenses / limits.monthlyLimit)
+                            .clamp(0.0, 1.0)
+                            : 0.0;
+
+                        final weekLimit = limits.monthlyLimit / 4;
+                        final weekPercentage = weekLimit > 0
+                            ? (weekExpenses / weekLimit).clamp(0.0, 1.0)
+                            : 0.0;
+
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: LimitCard(
+                                title: "Monthly",
+                                expense: monthExpenses,
+                                limit: limits.monthlyLimit,
+                                value: monthPercentage,
+                                onEdit: () async {
+                                  final updated = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const LimitsEditPage(),
+                                    ),
+                                  );
+                                  if (updated == true) {
+                                    sl<GoalsCubit>().loadGoals();
+                                  }
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: LimitCard(
+                                title: "Weekly",
+                                expense: weekExpenses,
+                                limit: weekLimit,
+                                value: weekPercentage,
+                                onEdit: () async {
+                                  final updated = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const LimitsEditPage(),
+                                    ),
+                                  );
+                                  if (updated == true) {
+                                    sl<GoalsCubit>().loadGoals();
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return const Center(child: Loading());
+                      }
+                    },
+                  );
+                } else if (state is GoalsError) {
+                  return Center(child: Text("Error: ${state.message}"));
                 }
-
-                final limits = snapshot.data!;
-                return BlocBuilder<TransactionCubit, TransactionState>(
-                  builder: (context, state) {
-                    if (state is TransactionStateSummary) {
-                      final monthExpenses = state.monthData.totalExpenses;
-                      final weekExpenses = state.weekData.totalExpenses;
-
-                      final monthPercentage = limits.monthlyLimit > 0
-                          ? (monthExpenses / limits.monthlyLimit)
-                          .clamp(0.0, 1.0)
-                          : 0.0;
-
-                      final weekLimit = limits.monthlyLimit / 4;
-                      final weekPercentage = weekLimit > 0
-                          ? (weekExpenses / weekLimit).clamp(0.0, 1.0)
-                          : 0.0;
-
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: LimitCard(
-                              title: "Monthly",
-                              expense: monthExpenses,
-                              limit: limits.monthlyLimit,
-                              value: monthPercentage,
-                              onEdit: () async {
-                                final updated = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LimitsEditPage(),
-                                  ),
-                                );
-                                if (updated == true) {
-                                  setState(() {
-                                    _limitsFuture =
-                                        sl<LimitsRepo>().getLimits();
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: LimitCard(
-                              title: "Weekly",
-                              expense: weekExpenses,
-                              limit: weekLimit,
-                              value: weekPercentage,
-                              onEdit: () async {
-                                final updated = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LimitsEditPage(),
-                                  ),
-                                );
-                                if (updated == true) {
-                                  setState(() {
-                                    _limitsFuture =
-                                        sl<LimitsRepo>().getLimits();
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      return const Center(child: Loading());
-                    }
-                  },
-                );
+                return const SizedBox.shrink();
               },
             ),
-
             SizedBox(height: 20.h),
 
             // ---- Goals Section ----
@@ -161,6 +152,9 @@ class _BudgetTabState extends State<BudgetTab> {
             ),
             SizedBox(height: 12.h),
 
+
+            // ... BudgetTab (Goals Section) ...
+
             Expanded(
               child: BlocBuilder<GoalsCubit, GoalsState>(
                 builder: (context, state) {
@@ -174,13 +168,23 @@ class _BudgetTabState extends State<BudgetTab> {
                       itemCount: state.goals.length,
                       itemBuilder: (context, index) {
                         final goal = state.goals[index];
-                        final totalPercentage =
-                        (goal.targetAmount / state.limitsEntity.monthlyLimit)
-                            .clamp(0.0, 1.0);
+
+                        // 1. Get the actual saved amount for THIS goal
+                        // *** ⚠️ Replace 'goal.currentSavedAmount' with your real field name (e.g., goal.savedTotal) ⚠️ ***
+                        final double currentProgress = sl<BalanceRepo>().getTotal();
+
+                        // 2. Calculate the standard progress ratio (Progress / Target)
+                        // This ratio is the INPUT for the GoalCard
+                        final double progressRatio = goal.targetAmount > 0
+                            ? (currentProgress / goal.targetAmount)
+                            : 0.0;
+
+                        final totalPercentage = progressRatio.clamp(0.0, 1.0);
+
                         return GoalCard(
-                          totalPercentage: totalPercentage,
+                          totalPercentage: totalPercentage, // Now correctly (Saved / Target)
                           goal: goal,
-                          total: state.limitsEntity.monthlyLimit,
+                          total: currentProgress,           // Now correctly the saved amount
                         );
                       },
                     );
@@ -191,6 +195,8 @@ class _BudgetTabState extends State<BudgetTab> {
                 },
               ),
             ),
+// ...
+// ...
           ],
         ),
       ),
